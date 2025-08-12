@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { SupabaseService } from 'src/app/core/supabase.service';
+import { SupabaseService } from '../../core/supabase.service';
 
 // This interface should match the 'profiles' table in Supabase
 export interface EmployeeProfile {

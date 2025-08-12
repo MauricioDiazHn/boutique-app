@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AppStore } from 'src/app/core/state/app.store';
+import { AppStore } from '../../core/state/app.store';
 import { UserService } from '../admin/user';
 import { ServiciosService } from '../admin/servicios';
 
