@@ -1,124 +1,35 @@
-Integrar Tailwind CSS:
+# Historial de Trabajo del Agente de IA
 
-Bash
+Este documento describe el trabajo realizado por los agentes de IA para construir la aplicación de la boutique.
 
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init
-Configurar Tailwind para que escanee tus archivos:
-Abre tailwind.config.js y modifica la propiedad content:
+## Resumen del Progreso
 
-JavaScript
+### Fase 1 & 2: Estructura y Configuración Inicial (COMPLETADO)
 
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./src/**/*.{html,ts}",
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
-Importar los estilos de Tailwind:
-Abre src/styles.css y añade las directivas de Tailwind:
+*   **Acción Realizada:** Un agente anterior configuró el proyecto, instaló **Angular Material**, creó toda la estructura de carpetas, generó los archivos base para componentes y servicios, y configuró las rutas con carga diferida.
 
-CSS
+### Fase 3: Desarrollo de Funcionalidades Clave (COMPLETADO)
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+*   **Acción Realizada:** El agente actual implementó toda la lógica de negocio simulada para la aplicación.
+    *   **Estado Global:** Se creó un servicio de estado (`AppStore`) con Signals de Angular para gestionar la sesión del usuario. *Nota: No se pudo instalar `@ngrx/signals` por problemas del entorno, por lo que se creó una solución personalizada.*
+    *   **Autenticación:** Se implementó `AuthService` con métodos `login` y `logout` simulados, y un `roleGuard` para proteger las rutas según el rol del usuario.
+    *   **Interceptor HTTP:** Se configuró un `HttpInterceptor` para añadir automáticamente los tokens de autenticación.
+    *   **Servicios de Admin:** Se crearon `UserService` y `ServiciosService` con datos de prueba y métodos CRUD.
+    *   **Paneles de UI:** Se construyeron los componentes para el **Panel de Administración** (con tablas para ver datos) y el **Registro de Ventas** (con un formulario reactivo), utilizando componentes de Angular Material.
 
-Fase 2: Arquitectura y Estructura de Carpetas (Día 1)
-Ahora, definimos el esqueleto de la aplicación.
+---
 
+## Tareas Pendientes para el Próximo Agente
 
+La lógica principal y la interfaz de usuario base de la aplicación están completas. El siguiente agente debe centrarse en los toques finales y mejoras.
 
-"Dentro de la carpeta src/app, crea la siguiente estructura para organizar el código de forma lógica:
+### Fase 4: PWA y Despliegue (PENDIENTE)
 
-src/app/
-├── core/
-│   ├── auth/
-│   │   ├── guards/          # Guardianes de ruta (proteger rutas)
-│   │   └── services/          # Servicio de autenticación
-│   └── layout/
-│       ├── header/
-│       └── footer/
-├── features/
-│   ├── auth/                # Componentes para login/registro
-│   ├── dashboard/           # Dashboard de la dueña
-│   └── sales/               # Registro de ventas de empleadas
-└── shared/
-    ├── ui/                  # Componentes de UI reusables (botones, inputs)
-    └── models/              # Modelos de datos (User, Sale, etc.)
-Esta estructura separa claramente el código central (
+1.  **Configurar Manifiesto PWA:** Personalizar el archivo `public/manifest.webmanifest` con los detalles correctos de la aplicación (nombre, colores, iconos, etc.).
+2.  **Configurar Service Worker:** Ajustar `ngsw-config.json` para definir estrategias de caché para las futuras llamadas a la API. La estrategia `freshness` es una buena candidata para datos que cambian con frecuencia.
 
-core), las funcionalidades de negocio (features) y los elementos compartidos (shared)."
+### Mejoras Futuras Sugeridas (PENDIENTE)
 
-
-(Mejorado) Estructura de Carpetas: Usaremos la estructura propuesta, pero añadiendo el features/admin y un core/state para nuestro SignalStore.
-
-(Mejorado) Definición de Rutas con Carga Diferida:
-
-TypeScript
-
-// app.routes.ts
-import { Routes } from '@angular/router';
-import { roleGuard } from './core/auth/auth.guard';
-
-export const routes: Routes = [
-  { path: 'auth', loadComponent: () => import('./features/auth/auth.component') },
-  {
-    path: 'dashboard',
-    loadComponent: () => import('./features/dashboard/dashboard.component'),
-    canActivate: [roleGuard(['dueña'])] // Usaremos el guard de mi plan original
-  },
-  {
-    path: 'sales',
-    loadComponent: () => import('./features/sales/sales.component'),
-    canActivate: [roleGuard(['empleada', 'dueña'])] 
-  },
-  { // RUTA AÑADIDA
-    path: 'admin',
-    loadComponent: () => import('./features/admin/admin.component'),
-    canActivate: [roleGuard(['dueña'])] 
-  },
-  { path: '', redirectTo: 'sales', pathMatch: 'full' },
-  { path: '**', redirectTo: 'sales' } 
-];
-Fase 3: Desarrollo de Funcionalidades Clave (Días 2-5)
-Estado Global y Autenticación:
-
-SignalStore (core/state/app.store.ts): Crea un pequeño SignalStore para manejar el estado de la sesión (usuario, token, rol). Esto será la única fuente de verdad sobre el usuario autenticado.
-
-AuthService: Este servicio interactuará con tu backend para el login y poblará el SignalStore. Implementará el almacenamiento de tokens en cookies HttpOnly seguras.
-
-Guardián de Ruta: Implementa el roleGuard funcional como se propuso, consumiendo los datos del SignalStore.
-
-HttpInterceptor para Peticiones Centralizadas (core/auth/auth.interceptor.ts):
-
-Crea un interceptor que se adjuntará a todas las peticiones HttpClient.
-
-Su trabajo es leer el token (si existe) y añadirlo a la cabecera Authorization.
-
-También puede manejar errores comunes (como 401 No Autorizado) de forma global, redirigiendo al login.
-
-Panel de Administración (features/admin/admin.component.ts):
-
-Crea el componente para la ruta /admin.
-
-Implementa las interfaces CRUD para gestionar servicios y empleadas, cada una con su propio servicio (ServiciosService, UserService).
-
-Recuerda la lógica de desactivar empleadas, no borrarlas.
-
-Registro de Ventas (features/sales/sales.component.ts):
-
-Implementa el componente como en el excelente ejemplo de la segunda opinión.
-
-Mejora: Inyecta el ServiciosService para obtener la lista de servicios y popular un <select> en el formulario, asegurando que los datos de entrada sean consistentes.
-
-Fase 4: PWA y Despliegue (Día 6)
-(Alineado) Habilitar PWA: Ejecuta ng add @angular/pwa.
-
-(Alineado) Configurar Manifiesto: Personaliza manifest.webmanifest con los detalles de la boutique.
-
-(Alineado) Configurar Service Worker: Ajusta ngsw-config.json para añadir estrategias de caché para tus llamadas a la API, como en el ejemplo de la segunda opinión (strategy: 'freshness').
+1.  **Implementar Diálogos de Admin:** El panel de administración tiene botones para "Añadir" y "Editar", pero la lógica actual solo imprime en la consola. Se debe implementar `MatDialog` de Angular Material para abrir formularios modales que permitan crear y actualizar empleadas y servicios.
+2.  **Conectar con un Backend Real:** Todos los servicios (`AuthService`, `UserService`, etc.) utilizan datos simulados. El siguiente paso lógico sería reemplazar estos mocks con verdaderas llamadas `HttpClient` a una API de backend.
+3.  **Refinar la UI/UX:** La interfaz de usuario es funcional pero básica. Se pueden añadir notificaciones (usando `MatSnackBar`), mejores indicadores de carga y pulir el diseño general.
