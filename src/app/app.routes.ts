@@ -21,6 +21,6 @@ export const routes: Routes = [
     canActivate: [roleGuard],
     data: { roles: ['dueña'] }
   },
-  { path: '', redirectTo: 'sales', pathMatch: 'full' },
-  { path: '**', redirectTo: 'sales' }
+  { path: '', redirectTo: 'auth', pathMatch: 'full' },
+  { path: '**', redirectTo: 'auth' }
 ];
