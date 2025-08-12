@@ -1,9 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-// Services
-import { ServiciosService } from '../admin/servicios';
+// Services & Models
+import { ServiciosService, BoutiqueService } from '../admin/servicios';
 
 // Angular Material Modules
 import { MatCardModule } from '@angular/material/card';
@@ -27,9 +27,12 @@ import { MatButtonModule } from '@angular/material/button';
   templateUrl: './sales.html',
   styleUrl: './sales.css'
 })
-export class SalesComponent {
+export class SalesComponent implements OnInit {
   private fb = inject(FormBuilder);
-  public serviciosService = inject(ServiciosService);
+  private serviciosService = inject(ServiciosService);
+
+  // Local state for services
+  public services = signal<BoutiqueService[]>([]);
 
   saleForm = this.fb.group({
     serviceId: ['', Validators.required],
@@ -37,10 +40,16 @@ export class SalesComponent {
     amountPaid: [0, [Validators.required, Validators.min(0)]]
   });
 
+  async ngOnInit() {
+    // In a real app, you might want to only fetch "active" services,
+    // but the current schema doesn't have an 'isActive' flag.
+    this.services.set(await this.serviciosService.getServices());
+  }
+
   onSubmit(): void {
     if (this.saleForm.valid) {
       console.log('Form Submitted!', this.saleForm.value);
-      // In a real app, you would call a service to save the sale
+      // TODO: This should call a SalesService to save the sale to Supabase.
       this.saleForm.reset();
     }
   }

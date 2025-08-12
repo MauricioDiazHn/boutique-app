@@ -1,54 +1,64 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { SupabaseService } from 'src/app/core/supabase.service';
 
+// This interface should match the 'services' table in Supabase
 export interface BoutiqueService {
   id: number;
   name: string;
+  description: string;
   price: number;
-  duration: number; // in minutes
-  isActive: boolean;
 }
-
-const MOCK_SERVICES: BoutiqueService[] = [
-  { id: 1, name: 'Corte de Dama', price: 250, duration: 45, isActive: true },
-  { id: 2, name: 'Tinte Completo', price: 800, duration: 120, isActive: true },
-  { id: 3, name: 'Manicura', price: 150, duration: 30, isActive: true },
-  { id: 4, name: 'Pedicura', price: 200, duration: 40, isActive: false },
-];
 
 @Injectable({
   providedIn: 'root'
 })
 export class ServiciosService {
-  private servicesState = signal<BoutiqueService[]>(MOCK_SERVICES);
+  private supabase = inject(SupabaseService).client;
 
-  public services = computed(() => this.servicesState());
-  public activeServices = computed(() => this.servicesState().filter(s => s.isActive));
-
-
-  addService(serviceData: Omit<BoutiqueService, 'id' | 'isActive'>): void {
-    const newService: BoutiqueService = {
-      ...serviceData,
-      id: Date.now(),
-      isActive: true,
-    };
-    this.servicesState.update(services => [...services, newService]);
+  async getServices(): Promise<BoutiqueService[]> {
+    const { data, error } = await this.supabase.from('services').select('*');
+    if (error) {
+      console.error('Error fetching services:', error);
+      return [];
+    }
+    return data || [];
   }
 
-  updateService(updatedService: BoutiqueService): void {
-    this.servicesState.update(services =>
-      services.map(s => s.id === updatedService.id ? updatedService : s)
-    );
+  async addService(serviceData: Omit<BoutiqueService, 'id'>): Promise<BoutiqueService | null> {
+    const { data, error } = await this.supabase
+      .from('services')
+      .insert([serviceData])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error adding service:', error);
+      throw error;
+    }
+    return data;
   }
 
-  deactivateService(id: number): void {
-    this.servicesState.update(services =>
-      services.map(s => s.id === id ? { ...s, isActive: false } : s)
-    );
+  async updateService(id: number, serviceData: Partial<Omit<BoutiqueService, 'id'>>): Promise<BoutiqueService | null> {
+    const { data, error } = await this.supabase
+      .from('services')
+      .update(serviceData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating service:', error);
+      throw error;
+    }
+    return data;
   }
 
-  reactivateService(id: number): void {
-    this.servicesState.update(services =>
-      services.map(s => s.id === id ? { ...s, isActive: true } : s)
-    );
+  // RLS policy ensures only 'dueña' can do this.
+  async deleteService(id: number): Promise<void> {
+    const { error } = await this.supabase.from('services').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting service:', error);
+      throw error;
+    }
   }
 }

@@ -1,54 +1,40 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
+import { SupabaseService } from 'src/app/core/supabase.service';
 
-export interface Employee {
-  id: number;
-  name: string;
+// This interface should match the 'profiles' table in Supabase
+export interface EmployeeProfile {
+  id: string; // This is a UUID from auth.users
   email: string;
-  role: 'empleada'; // Admin can only manage employees
-  isActive: boolean;
+  full_name: string;
+  role: 'dueña' | 'empleada';
 }
-
-const MOCK_EMPLOYEES: Employee[] = [
-  { id: 1, name: 'Laura', email: 'laura@boutique.com', role: 'empleada', isActive: true },
-  { id: 2, name: 'Sofia', email: 'sofia@boutique.com', role: 'empleada', isActive: true },
-  { id: 3, name: 'Carla', email: 'carla@boutique.com', role: 'empleada', isActive: false },
-];
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
-  private employeesState = signal<Employee[]>(MOCK_EMPLOYEES);
+  private supabase = inject(SupabaseService).client;
 
-  public employees = computed(() => this.employeesState());
+  /**
+   * Fetches all user profiles that have the 'empleada' role.
+   * RLS policy should ensure only the 'dueña' can call this successfully.
+   */
+  async getEmployees(): Promise<EmployeeProfile[]> {
+    const { data, error } = await this.supabase
+      .from('profiles')
+      .select('*')
+      .eq('role', 'empleada');
 
-  addUser(employeeData: Omit<Employee, 'id' | 'isActive' | 'role'>): void {
-    const newEmployee: Employee = {
-      ...employeeData,
-      id: Date.now(), // simple unique id
-      role: 'empleada',
-      isActive: true,
-    };
-    this.employeesState.update(employees => [...employees, newEmployee]);
+    if (error) {
+      console.error('Error fetching employees:', error);
+      return [];
+    }
+
+    return data || [];
   }
 
-  updateUser(updatedEmployee: Employee): void {
-    this.employeesState.update(employees =>
-      employees.map(emp => emp.id === updatedEmployee.id ? updatedEmployee : emp)
-    );
-  }
-
-  // Soft delete
-  deactivateUser(id: number): void {
-    this.employeesState.update(employees =>
-      employees.map(emp => emp.id === id ? { ...emp, isActive: false } : emp)
-    );
-  }
-
-  // Optional: a method to reactivate a user
-  reactivateUser(id: number): void {
-    this.employeesState.update(employees =>
-      employees.map(emp => emp.id === id ? { ...emp, isActive: true } : emp)
-    );
-  }
+  // NOTE: Adding, updating, or deactivating employees would be handled
+  // via Supabase Auth functions (e.g., inviting a user) and potentially
+  // database functions or edge functions for more complex operations,
+  // which is beyond the scope of this direct RLS implementation.
 }

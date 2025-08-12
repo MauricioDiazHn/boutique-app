@@ -10,7 +10,7 @@
         <mat-form-field appearance="fill">
           <mat-label>Servicio</mat-label>
           <mat-select formControlName="serviceId">
-            @for (service of serviciosService.activeServices(); track service.id) {
+            @for (service of services(); track service.id) {
               <mat-option [value]="service.id">{{ service.name }}</mat-option>
             }
           </mat-select>
