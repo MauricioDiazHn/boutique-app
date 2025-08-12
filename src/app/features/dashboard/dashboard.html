@@ -1,1 +1,24 @@
-<p>dashboard works!</p>
+<div class="dashboard-container">
+  @if (appStore.user(); as user) {
+    <h1>Bienvenida, {{ user.name }}!</h1>
+    <p>Este es tu panel de control.</p>
+  }
+
+  <div class="stats-container">
+    <mat-card>
+      <mat-card-header>
+        <div mat-card-avatar><mat-icon>groups</mat-icon></div>
+        <mat-card-title>{{ employeeCount() }}</mat-card-title>
+        <mat-card-subtitle>Empleadas Activas</mat-card-subtitle>
+      </mat-card-header>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-header>
+        <div mat-card-avatar><mat-icon>cut</mat-icon></div>
+        <mat-card-title>{{ serviceCount() }}</mat-card-title>
+        <mat-card-subtitle>Servicios Ofrecidos</mat-card-subtitle>
+      </mat-card-header>
+    </mat-card>
+  </div>
+</div>
