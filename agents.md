@@ -19,7 +19,8 @@ expenses: Para los egresos. Columnas: id, created_at, description, amount.
 
 Instalar el Cliente de Supabase en Angular:
 
-Bash
+
+Este documento describe el trabajo realizado por un agente de IA para configurar la estructura inicial de la aplicación de la boutique. También detalla las tareas pendientes para el próximo agente.
 
 npm install @supabase/supabase-js
 Configurar las Variables de Entorno: Abre src/environments/environment.ts y guarda tus claves de Supabase allí. Nunca subas claves secretas a un repositorio público.

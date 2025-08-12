@@ -27,7 +27,5 @@ export const roleGuard: CanActivateFn = (route, state) => {
     router.navigate(['/sales']); // Or a dedicated 'unauthorized' page
     return false;
   }
-
-  // 4. If authenticated and authorized, allow access
   return true;
 };
