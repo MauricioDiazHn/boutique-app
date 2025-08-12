@@ -1,124 +1,129 @@
-Integrar Tailwind CSS:
+Fase 1: Configuración del Proyecto y Backend (Día 1)
+Antes de crear componentes, preparamos tanto el frontend como el backend.
+
+(Sin Cambios) 1.1 Configuración de Angular: Sigue los pasos para crear el proyecto e integrar Tailwind CSS.
+
+1.2 (NUEVO) Configuración del Backend con Supabase:
+
+Crear el Proyecto: Ve a supabase.com, crea una cuenta y un nuevo proyecto. Guarda tu URL del Proyecto y tu clave de API anon public. Estas son tus llaves para conectar la app.
+
+Diseñar la Base de Datos: Dentro del "Table Editor" de Supabase, crearás las tablas que almacenarán tus datos. Este es tu esquema:
+
+profiles: Para almacenar información de los usuarios. Columnas: id (vinculado a auth.users), email, full_name, y una columna crucial role (de tipo text) que contendrá 'dueña' o 'empleada'.
+
+services: Para los servicios de la boutique. Columnas: id, name, description, price.
+
+sales: Para los ingresos. Columnas: id, created_at, amount, service_id (vinculado a services.id), employee_id (vinculado a profiles.id).
+
+expenses: Para los egresos. Columnas: id, created_at, description, amount.
+
+Instalar el Cliente de Supabase en Angular:
 
 Bash
 
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init
-Configurar Tailwind para que escanee tus archivos:
-Abre tailwind.config.js y modifica la propiedad content:
-
-JavaScript
-
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    "./src/**/*.{html,ts}",
-  ],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}
-Importar los estilos de Tailwind:
-Abre src/styles.css y añade las directivas de Tailwind:
-
-CSS
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
-Fase 2: Arquitectura y Estructura de Carpetas (Día 1)
-Ahora, definimos el esqueleto de la aplicación.
-
-
-
-"Dentro de la carpeta src/app, crea la siguiente estructura para organizar el código de forma lógica:
-
-src/app/
-├── core/
-│   ├── auth/
-│   │   ├── guards/          # Guardianes de ruta (proteger rutas)
-│   │   └── services/          # Servicio de autenticación
-│   └── layout/
-│       ├── header/
-│       └── footer/
-├── features/
-│   ├── auth/                # Componentes para login/registro
-│   ├── dashboard/           # Dashboard de la dueña
-│   └── sales/               # Registro de ventas de empleadas
-└── shared/
-    ├── ui/                  # Componentes de UI reusables (botones, inputs)
-    └── models/              # Modelos de datos (User, Sale, etc.)
-Esta estructura separa claramente el código central (
-
-core), las funcionalidades de negocio (features) y los elementos compartidos (shared)."
-
-
-(Mejorado) Estructura de Carpetas: Usaremos la estructura propuesta, pero añadiendo el features/admin y un core/state para nuestro SignalStore.
-
-(Mejorado) Definición de Rutas con Carga Diferida:
+npm install @supabase/supabase-js
+Configurar las Variables de Entorno: Abre src/environments/environment.ts y guarda tus claves de Supabase allí. Nunca subas claves secretas a un repositorio público.
 
 TypeScript
 
-// app.routes.ts
-import { Routes } from '@angular/router';
-import { roleGuard } from './core/auth/auth.guard';
+export const environment = {
+  production: false,
+  supabaseUrl: 'TU_URL_DE_PROYECTO_SUPABASE',
+  supabaseKey: 'TU_CLAVE_ANON_PUBLIC'
+};
+Fase 2: Arquitectura y Seguridad Full-Stack (Día 1-2)
+Ahora conectamos la seguridad del frontend con la del backend.
 
-export const routes: Routes = [
-  { path: 'auth', loadComponent: () => import('./features/auth/auth.component') },
-  {
-    path: 'dashboard',
-    loadComponent: () => import('./features/dashboard/dashboard.component'),
-    canActivate: [roleGuard(['dueña'])] // Usaremos el guard de mi plan original
-  },
-  {
-    path: 'sales',
-    loadComponent: () => import('./features/sales/sales.component'),
-    canActivate: [roleGuard(['empleada', 'dueña'])] 
-  },
-  { // RUTA AÑADIDA
-    path: 'admin',
-    loadComponent: () => import('./features/admin/admin.component'),
-    canActivate: [roleGuard(['dueña'])] 
-  },
-  { path: '', redirectTo: 'sales', pathMatch: 'full' },
-  { path: '**', redirectTo: 'sales' } 
-];
-Fase 3: Desarrollo de Funcionalidades Clave (Días 2-5)
+(Mejorado) 2.1 Estructura de Carpetas: La estructura se mantiene, pero ahora los servicios tendrán una dependencia clara del backend.
+
+2.2 (NUEVO y CRÍTICO) 🛡️ Implementar la Seguridad en la Base de Datos (Row Level Security - RLS):
+Este es el paso de seguridad más importante de todo el proyecto. Como tu app Angular hablará directamente con la base de datos a través de la API de Supabase, la defensa no está en un servidor intermedio, sino
+
+directamente en la base de datos.
+
+
+
+Para cada tabla, debes activar RLS y luego crear políticas que definan quién puede hacer qué.
+
+Ejemplos de Políticas RLS en SQL (a ejecutar en el editor SQL de Supabase):
+
+SQL
+
+-- Primero, habilita RLS en cada tabla
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE services ENABLE ROW LEVEL SECURITY;
+
+-- POLÍTICA 1: Las empleadas solo pueden ver su propio perfil. La dueña puede ver todos.
+CREATE POLICY "Users can view their own profile, owner can view all"
+ON profiles FOR SELECT USING (
+  auth.uid() = id OR (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'dueña'
+);
+
+-- POLÍTICA 2: Las empleadas solo pueden registrar ventas para ellas mismas.
+CREATE POLICY "Employees can create their own sales"
+ON sales FOR INSERT WITH CHECK (auth.uid() = employee_id);
+
+-- POLÍTICA 3: Las empleadas solo pueden ver sus propias ventas. La dueña puede ver todas.
+CREATE POLICY "Employees can view their own sales, owner can view all"
+ON sales FOR SELECT USING (
+  auth.uid() = employee_id OR (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'dueña'
+);
+
+-- POLÍTICA 4: Solo la dueña puede gestionar los servicios.
+CREATE POLICY "Owner can manage all services"
+ON services FOR ALL USING (
+  (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'dueña'
+);
+2.3 (Mejorado) Conexión Centralizada en Angular:
+Crea un servicio central para manejar la instancia del cliente de Supabase, asegurando que solo se inicialice una vez.
+
+TypeScript
+
+// src/app/core/supabase.service.ts
+import { Injectable } from '@angular/core';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { environment } from 'src/environments/environment';
+
+@Injectable({ providedIn: 'root' })
+export class SupabaseService {
+  public readonly client: SupabaseClient;
+
+  constructor() {
+    this.client = createClient(environment.supabaseUrl, environment.supabaseKey);
+  }
+}
+Fase 3: Desarrollo de Funcionalidades Conectadas (Días 2-5)
+Ahora, los servicios que mencionamos en el plan anterior usarán el SupabaseService.
+
 Estado Global y Autenticación:
 
-SignalStore (core/state/app.store.ts): Crea un pequeño SignalStore para manejar el estado de la sesión (usuario, token, rol). Esto será la única fuente de verdad sobre el usuario autenticado.
+AuthService: Este servicio inyectará SupabaseService. Sus métodos
 
-AuthService: Este servicio interactuará con tu backend para el login y poblará el SignalStore. Implementará el almacenamiento de tokens en cookies HttpOnly seguras.
+login() y register() llamarán a supabase.auth.signInWithPassword() y supabase.auth.signUp().  Escuchará los cambios de autenticación con
 
-Guardián de Ruta: Implementa el roleGuard funcional como se propuso, consumiendo los datos del SignalStore.
+supabase.auth.onAuthStateChange() para actualizar el SignalStore con la sesión del usuario.
 
-HttpInterceptor para Peticiones Centralizadas (core/auth/auth.interceptor.ts):
+Servicios de Datos (ServiciosService, SalesService, etc.):
 
-Crea un interceptor que se adjuntará a todas las peticiones HttpClient.
+Cada servicio de datos inyectará el SupabaseService para realizar operaciones CRUD.
 
-Su trabajo es leer el token (si existe) y añadirlo a la cabecera Authorization.
+Ejemplo en ServiciosService:
 
-También puede manejar errores comunes (como 401 No Autorizado) de forma global, redirigiendo al login.
+TypeScript
 
-Panel de Administración (features/admin/admin.component.ts):
+// ...
+import { SupabaseService } from 'src/app/core/supabase.service';
 
-Crea el componente para la ruta /admin.
+@Injectable({ providedIn: 'root' })
+export class ServiciosService {
+  private supabase = inject(SupabaseService).client;
 
-Implementa las interfaces CRUD para gestionar servicios y empleadas, cada una con su propio servicio (ServiciosService, UserService).
-
-Recuerda la lógica de desactivar empleadas, no borrarlas.
-
-Registro de Ventas (features/sales/sales.component.ts):
-
-Implementa el componente como en el excelente ejemplo de la segunda opinión.
-
-Mejora: Inyecta el ServiciosService para obtener la lista de servicios y popular un <select> en el formulario, asegurando que los datos de entrada sean consistentes.
-
-Fase 4: PWA y Despliegue (Día 6)
-(Alineado) Habilitar PWA: Ejecuta ng add @angular/pwa.
-
-(Alineado) Configurar Manifiesto: Personaliza manifest.webmanifest con los detalles de la boutique.
-
-(Alineado) Configurar Service Worker: Ajusta ngsw-config.json para añadir estrategias de caché para tus llamadas a la API, como en el ejemplo de la segunda opinión (strategy: 'freshness').
+  async getServices() {
+    const { data, error } = await this.supabase.from('services').select('*');
+    if (error) throw error;
+    return data || [];
+  }
+  // ... métodos para addService, updateService, etc.
+}
+(Sin Cambios en la lógica del componente) El desarrollo de los componentes del Panel de Administración y Registro de Ventas sigue igual, pero ahora sus servicios de dependencia están completamente conectados a Supabase, y la seguridad está garantizada por las políticas de RLS que has creado.
