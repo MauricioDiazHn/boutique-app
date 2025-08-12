@@ -1,0 +1,54 @@
+:host {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background: linear-gradient(to right top, #65dfc9, #6cdbeb);
+}
+
+.auth-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+mat-card {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 1rem;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  padding: 2rem;
+}
+
+mat-card-title {
+  text-align: center;
+  color: #fff;
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+mat-form-field {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.mat-mdc-form-field-flex {
+  background-color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.mat-mdc-input-element {
+    color: #333 !important;
+}
+
+button[mat-raised-button] {
+  width: 100%;
+  padding: 0.8rem 0;
+  font-size: 1rem;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+}

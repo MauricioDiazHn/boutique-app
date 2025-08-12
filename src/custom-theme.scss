@@ -1,4 +1,3 @@
-
 // Include theming for Angular Material with `mat.theme()`.
 // This Sass mixin will define CSS variables that are used for styling Angular Material
 // components according to the Material 3 design spec.
@@ -12,7 +11,8 @@ html {
       primary: mat.$azure-palette,
       tertiary: mat.$blue-palette,
     ),
-    typography: Roboto,
+    // Esto debería ser una variable de tipografía definida, no un string
+    // typography: mat.define-typography-config(),
     density: 0,
   ));
 }
